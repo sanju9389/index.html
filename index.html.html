@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sand Video Creator</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:#080d19;
+ color:white;
+ font-family:Arial,sans-serif
+}
+header{
+ padding:22px 7%;
+ background:#111a2d;
+ display:flex;
+ justify-content:space-between;
+ align-items:center
+}
+.logo{color:#a78bfa;font-size:25px;font-weight:bold}
+main{max-width:850px;margin:55px auto;padding:20px}
+.hero{text-align:center}
+.hero h1{font-size:42px}
+.hero span{color:#a78bfa}
+.hero p{color:#9ca3af}
+.panel{
+ background:#141e32;
+ border:1px solid #263653;
+ border-radius:18px;
+ padding:25px;
+ margin-top:35px
+}
+input,textarea{
+ width:100%;padding:15px;
+ background:#080d19;color:white;
+ border:1px solid #39465e;
+ border-radius:9px;
+ margin:10px 0 20px
+}
+textarea{height:130px}
+button{
+ background:linear-gradient(90deg,#7c3aed,#2563eb);
+ border:0;border-radius:9px;
+ padding:15px;color:white;
+ font-size:16px;font-weight:bold;
+ cursor:pointer;width:100%
+}
+video{width:100%;margin-top:20px;border-radius:12px}
+#status{margin-top:18px;color:#a78bfa}
+a{color:#a78bfa}
+</style>
+</head>
+
+<body>
+
+<header>
+ <div class="logo">🎬 Sand Video Creator</div>
+ <div id="account">AI Video Studio</div>
+</header>
+
+<main>
+ <section class="hero">
+  <h1>Create Videos With <span>AI</span></h1>
+  <p>Turn your imagination into stunning videos.</p>
+ </section>
+
+ <div class="panel">
+  <h2>Generate Your Video</h2>
+
+  <label>Video Prompt</label>
+  <textarea id="prompt"
+  placeholder="A cinematic flying camera over a beautiful mountain..."></textarea>
+
+  <button onclick="generateVideo()">
+   ✨ Generate AI Video
+  </button>
+
+  <div id="status"></div>
+  <video id="preview" controls hidden></video>
+ </div>
+
+ <div class="panel">
+  <h2>My Account</h2>
+
+  <input id="email" placeholder="Email address">
+  <input id="password" type="password" placeholder="Password">
+
+  <button onclick="login()">Login</button>
+
+  <p style="text-align:center">New user?</p>
+  <button onclick="register()">Create Account</button>
+ </div>
+</main>
+
+<script>
+let token = localStorage.getItem("sand_token");
+
+async function api(path, method="GET", data=null) {
+ const response = await fetch("/api"+path,{
+  method,
+  headers:{
+   "Content-Type":"application/json",
+   ...(token ? {Authorization:"Bearer "+token}: {})
+  },
+  ...(data ? {body:JSON.stringify(data)}:{})
+ });
+
+ const result = await response.json();
+
+ if(!response.ok) throw new Error(result.error || "Request failed");
+
+ return result;
+}
+
+async function login(){
+ try{
+  const result=await api("/login","POST",{
+   email:email.value,
+   password:password.value
+  });
+
+  token=result.token;
+  localStorage.setItem("sand_token",token);
+  account.innerText="Welcome "+result.name;
+  alert("Login successful!");
+ }catch(e){alert(e.message)}
+}
+
+async function register(){
+ try{
+  const result=await api("/register","POST",{
+   name:email.value.split("@")[0],
+   email:email.value,
+   password:password.value
+  });
+  alert("Account created. Please login.");
+ }catch(e){alert(e.message)}
+}
+
+async function generateVideo(){
+ const promptText=document.getElementById("prompt").value.trim();
+ const status=document.getElementById("status");
+ const preview=document.getElementById("preview");
+
+ if(!token){
+  status.innerText="Please login first.";
+  return;
+ }
+
+ if(!promptText){
+  status.innerText="Enter a video prompt.";
+  return;
+ }
+
+ status.innerText="Generating your video. Please wait...";
+ preview.hidden=true;
+
+ try{
+  const result=await api("/generate","POST",{
+   prompt:promptText
+  });
+
+  preview.src=result.videoUrl;
+  preview.hidden=false;
+  status.innerText="Your AI video is ready!";
+
+ }catch(e){
+  status.innerText=e.message;
+ }
+}
+</script>
+
+</body>
+</html>
